@@ -5,19 +5,33 @@ OPCN2::OPCN2(uint8_t chip_select)
   // Initiate an instance of the OPCN2 class
   // Ex. OPCN2 alpha(chip_select = A2);
   _CS = chip_select;
+  _fv = -1;
+  
+  /* Don't initialize the SPI in the constructor */
+#if 0
+  SPI.begin(_CS);
+  SPI.setBitOrder(MSBFIRST);
+  SPI.setDataMode(SPI_MODE1);
+  SPI.setClockSpeed(1000000);
+#endif
+}
 
-  // Set up SPI
+bool OPCN2::initialize()
+{
+
   SPI.begin(_CS);
   SPI.setBitOrder(MSBFIRST);
   SPI.setDataMode(SPI_MODE1);
   SPI.setClockSpeed(1000000);
 
-  // Set the firmware version
+  delay(1000);
+
   _fv = this->read_information_string().replace(".", "").trim().substring(24, 26).toInt();
 
   if (_fv < 18) {
     firm_ver.major = _fv;
     firm_ver.minor = 0;
+    return false;
   }
   else {
     firm_ver.major = 99;    // only temporarily...
@@ -25,6 +39,7 @@ OPCN2::OPCN2(uint8_t chip_select)
 
     firm_ver.major = tmp.major;
     firm_ver.minor = tmp.minor;
+    return true;
   }
 }
 
@@ -143,14 +158,16 @@ String OPCN2::read_information_string()
   SPI.transfer(0x3F);
   digitalWrite(this->_CS, HIGH);
 
-  delay(3);
+  /* Increased to 10 as documented */
+  delay(10);
 
   // Iterate to read the entire string
   digitalWrite(this->_CS, LOW);
-  for (int i = 0; i < 60; i++){
+  for (int i = 0; i < 61; i++){
     vals[i] = SPI.transfer(0x00);
     result += String((char)vals[i]);
-    delayMicroseconds(4);
+    /* Increased to 10 as documented */
+    delayMicroseconds(10);
   }
 
   digitalWrite(this->_CS, HIGH);
@@ -571,7 +588,7 @@ String OPCN2::read_serial_number()
 
     // Iterate to read the entire string
     digitalWrite(this->_CS, LOW);
-    for (int i = 0; i < 61; i++){
+    for (int i = 0; i < 60; i++){
         vals[i] = SPI.transfer(0x00);
         result += String((char)vals[i]);
         delayMicroseconds(4);

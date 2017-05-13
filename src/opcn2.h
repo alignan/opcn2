@@ -196,6 +196,7 @@ public:
     bool set_laser_power(uint8_t value);
     bool toggle_fan(bool state);
     bool toggle_laser(bool state);
+    bool initialize();
 
     String read_information_string();
     String read_serial_number();
